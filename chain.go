@@ -21,20 +21,23 @@ type chain struct {
 	vmset               *metrics.Set
 
 	gnew func(string, func() float64) *metrics.Gauge
+	cnew func(string) *metrics.Counter
 }
 
 func NewChain(options ...Option) Chain {
 	c := &chain{
 		gnew: metrics.NewGauge,
+		cnew: metrics.NewCounter,
 	}
 	c.gpool = sync.Pool{New: func() any { return &gauge{} }}
-	// c.cpool = sync.Pool{New: func() any { return &counter{} }}
+	c.cpool = sync.Pool{New: func() any { return &counter{} }}
 	// c.hpool = sync.Pool{New: func() any { return &histogram{} }}
 	for _, fn := range options {
 		fn(c)
 	}
 	if c.vmset != nil {
 		c.gnew = c.vmset.NewGauge
+		c.cnew = c.vmset.NewCounter
 	}
 	return c
 }
@@ -44,8 +47,7 @@ func (c *chain) Gauge(initName string, f func() float64) GaugeChain {
 }
 
 func (c *chain) Counter(initName string) CounterChain {
-	// todo implement me
-	return nil
+	return c.acquireCounter(initName)
 }
 
 func (c *chain) Histogram(initName string) HistogramChain {
@@ -87,6 +89,41 @@ func (c *chain) getGauge(fullName string, f func() float64) *metrics.Gauge {
 	g := c.gnew(scopy(fullName), f)
 	c.gmap.Store(fullName, g)
 	return g
+}
+
+func (c *chain) acquireCounter(initName string) *counter {
+	cc := c.cpool.Get().(*counter)
+	cc.sptr = c.ptr()
+	cc.setName(initName)
+	return cc
+}
+
+func (c *chain) releaseCounter(cc CounterChain) {
+	if gg, ok := any(cc).(*counter); ok {
+		gg.reset()
+		c.cpool.Put(cc)
+	}
+}
+
+func (c *chain) getCounter(fullName string) *metrics.Counter {
+	// Fast check.
+	if raw, ok := c.cmap.Load(fullName); ok {
+		return raw.(*metrics.Counter)
+	}
+
+	// Slow path.
+	c.cmux.Lock()
+	defer c.cmux.Unlock()
+
+	// Double check.
+	if raw, ok := c.cmap.Load(fullName); ok {
+		// Double check passed.
+		return raw.(*metrics.Counter)
+	}
+
+	cc := c.cnew(scopy(fullName))
+	c.cmap.Store(fullName, cc)
+	return cc
 }
 
 func (c *chain) ptr() uintptr {

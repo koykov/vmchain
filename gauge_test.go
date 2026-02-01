@@ -8,7 +8,7 @@ import (
 )
 
 func gfn() GaugeChain {
-	return Gauge("myservice_feature", nil).
+	return Gauge("myservice_feature_gauge", nil).
 		WithLabel("groupID", "foobar").
 		WithLabel("countryID", "123")
 }
