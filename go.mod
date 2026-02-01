@@ -1,6 +1,6 @@
 module github.com/koykov/vmchain
 
-go 1.24
+go 1.22
 
 require (
 	github.com/VictoriaMetrics/metrics v1.40.2

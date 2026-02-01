@@ -58,11 +58,11 @@ func (g *gauge) Dec() {
 	}
 }
 
-func (g *gauge) indirectSet() *vmset {
+func (g *gauge) indirectSet() *chain {
 	if g.sptr == 0 {
 		return nil
 	}
-	return (*vmset)(indirect.ToUnsafePtr(g.sptr))
+	return (*chain)(indirect.ToUnsafePtr(g.sptr))
 }
 
 func (g *gauge) reset() {
