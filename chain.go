@@ -9,9 +9,9 @@ import (
 )
 
 type Chain interface {
-	Gauge(name string, f func() float64) Gauge
-	Counter(name string) Counter
-	Histogram(name string) Histogram
+	Gauge(name string, f func() float64) GaugeChain
+	Counter(name string) CounterChain
+	Histogram(name string) HistogramChain
 }
 
 type chain struct {
@@ -32,16 +32,16 @@ func NewChain(options ...Option) Chain {
 	return c
 }
 
-func (c *chain) Gauge(initName string, f func() float64) Gauge {
+func (c *chain) Gauge(initName string, f func() float64) GaugeChain {
 	return c.acquireGauge(initName, f)
 }
 
-func (c *chain) Counter(initName string) Counter {
+func (c *chain) Counter(initName string) CounterChain {
 	// todo implement me
 	return nil
 }
 
-func (c *chain) Histogram(initName string) Histogram {
+func (c *chain) Histogram(initName string) HistogramChain {
 	// todo implement me
 	return nil
 }
@@ -54,7 +54,7 @@ func (c *chain) acquireGauge(initName string, f func() float64) *gauge {
 	return g
 }
 
-func (c *chain) releaseGauge(g Gauge) {
+func (c *chain) releaseGauge(g GaugeChain) {
 	if gg, ok := any(g).(*gauge); ok {
 		gg.reset()
 		c.gpool.Put(g)

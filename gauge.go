@@ -2,8 +2,8 @@ package vmchain
 
 import "github.com/koykov/indirect"
 
-type Gauge interface {
-	WithLabel(name, value string) Gauge
+type GaugeChain interface {
+	WithLabel(name, value string) GaugeChain
 	Add(value float64)
 	Set(value float64)
 	Inc()
@@ -17,7 +17,7 @@ type gauge struct {
 	f    func() float64
 }
 
-func (g *gauge) WithLabel(name, value string) Gauge {
+func (g *gauge) WithLabel(name, value string) GaugeChain {
 	g.setLabel(name, value)
 	return g
 }

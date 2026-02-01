@@ -1,7 +1,7 @@
 package vmchain
 
-type Histogram interface {
-	WithLabel(name, value string) Histogram
+type HistogramChain interface {
+	WithLabel(name, value string) HistogramChain
 	Update(value float64)
 	Reset()
 }
