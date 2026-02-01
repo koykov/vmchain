@@ -19,15 +19,22 @@ type chain struct {
 	gmap, cmap, hmap    sync.Map
 	gmux, cmux, hmux    sync.Mutex
 	vmset               *metrics.Set
+
+	gnew func(string, func() float64) *metrics.Gauge
 }
 
 func NewChain(options ...Option) Chain {
-	c := &chain{}
+	c := &chain{
+		gnew: metrics.NewGauge,
+	}
 	c.gpool = sync.Pool{New: func() any { return &gauge{} }}
 	// c.cpool = sync.Pool{New: func() any { return &counter{} }}
 	// c.hpool = sync.Pool{New: func() any { return &histogram{} }}
 	for _, fn := range options {
 		fn(c)
+	}
+	if c.vmset != nil {
+		c.gnew = c.vmset.NewGauge
 	}
 	return c
 }
@@ -77,12 +84,7 @@ func (c *chain) getGauge(fullName string, f func() float64) *metrics.Gauge {
 		return raw.(*metrics.Gauge)
 	}
 
-	var g *metrics.Gauge
-	newfn := metrics.NewGauge
-	if c.vmset != nil {
-		newfn = c.vmset.NewGauge
-	}
-	g = newfn(scopy(fullName), f)
+	g := c.gnew(scopy(fullName), f)
 	c.gmap.Store(fullName, g)
 	return g
 }
