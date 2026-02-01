@@ -78,11 +78,11 @@ func (c *chain) getGauge(fullName string, f func() float64) *metrics.Gauge {
 	}
 
 	var g *metrics.Gauge
+	newfn := metrics.NewGauge
 	if c.vmset != nil {
-		g = c.vmset.NewGauge(scopy(fullName), f)
-	} else {
-		g = metrics.NewGauge(scopy(fullName), f)
+		newfn = c.vmset.NewGauge
 	}
+	g = newfn(scopy(fullName), f)
 	c.gmap.Store(fullName, g)
 	return g
 }
