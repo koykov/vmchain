@@ -22,6 +22,7 @@ func (b *builder) setLabel(label, value string) {
 	b.buf = append(b.buf, `="`...)
 	b.buf = append(b.buf, value...)
 	b.buf = append(b.buf, '"')
+	b.lc++
 }
 
 func (b *builder) commit() string {
