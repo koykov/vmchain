@@ -8,23 +8,28 @@ import (
 	"github.com/koykov/byteconv"
 )
 
+// Chain represents a set for chains of metrics.
 type Chain interface {
-	Gauge(name string, f func() float64) GaugeChain
-	Counter(name string) CounterChain
-	Histogram(name string) HistogramChain
+	// Gauge initialize with initName a gauge chain and return it.
+	Gauge(initName string, f func() float64) GaugeChain
+	// Counter initialize with initName a counter chain and return it.
+	Counter(initName string) CounterChain
+	// Histogram initialize with initName a histogram chain and return it.
+	Histogram(initName string) HistogramChain
 }
 
 type chain struct {
 	gpool, cpool, hpool sync.Pool
-	gmap, cmap, hmap    sync.Map
 	gmux, cmux, hmux    sync.Mutex
-	vmset               *metrics.Set
+	gmap, cmap, hmap    sync.Map
 
-	gnew func(string, func() float64) *metrics.Gauge
-	cnew func(string) *metrics.Counter
-	hnew func(string) *metrics.Histogram
+	vmset *metrics.Set
+	gnew  func(string, func() float64) *metrics.Gauge
+	cnew  func(string) *metrics.Counter
+	hnew  func(string) *metrics.Histogram
 }
 
+// NewChain makes a new chain set.
 func NewChain(options ...Option) Chain {
 	c := &chain{
 		gnew: metrics.NewGauge,
