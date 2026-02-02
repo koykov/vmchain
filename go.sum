@@ -6,6 +6,8 @@ github.com/koykov/byteconv v1.0.1 h1:5Yb6++P+HnipDW/V9rHXR7CyS0ZFncspT4isvt65fFA
 github.com/koykov/byteconv v1.0.1/go.mod h1:viZknv/akQJrXOQS3bZu2U7TE+gjA03LFQpSsRExZR4=
 github.com/koykov/indirect v1.0.1 h1:1veVipIWBeklFHMvzuwhL82X5eDaJzN+hPeVGRvu22Y=
 github.com/koykov/indirect v1.0.1/go.mod h1:2qWC0hrIHIexlKaqPA0VWEa0s2V/qxxNJv7XPncnh2I=
+github.com/koykov/x2bytes v1.0.4 h1:aRTi/QHz3BbiIfW+BIKW7V8EmdIV1g3kwLjTHTJz6Xg=
+github.com/koykov/x2bytes v1.0.4/go.mod h1:0fbvyQAm3RAiTOE/NT0Dg3ZXL9EQiYpyrp5wZyoz11Q=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=

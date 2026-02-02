@@ -6,6 +6,7 @@ require (
 	github.com/VictoriaMetrics/metrics v1.40.2
 	github.com/koykov/byteconv v1.0.1
 	github.com/koykov/indirect v1.0.1
+	github.com/koykov/x2bytes v1.0.4
 	github.com/stretchr/testify v1.11.1
 )
 
