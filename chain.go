@@ -22,22 +22,25 @@ type chain struct {
 
 	gnew func(string, func() float64) *metrics.Gauge
 	cnew func(string) *metrics.Counter
+	hnew func(string) *metrics.Histogram
 }
 
 func NewChain(options ...Option) Chain {
 	c := &chain{
 		gnew: metrics.NewGauge,
 		cnew: metrics.NewCounter,
+		hnew: metrics.NewHistogram,
 	}
 	c.gpool = sync.Pool{New: func() any { return &gauge{} }}
 	c.cpool = sync.Pool{New: func() any { return &counter{} }}
-	// c.hpool = sync.Pool{New: func() any { return &histogram{} }}
+	c.hpool = sync.Pool{New: func() any { return &histogram{} }}
 	for _, fn := range options {
 		fn(c)
 	}
 	if c.vmset != nil {
 		c.gnew = c.vmset.NewGauge
 		c.cnew = c.vmset.NewCounter
+		c.hnew = c.vmset.NewHistogram
 	}
 	return c
 }
@@ -51,8 +54,7 @@ func (c *chain) Counter(initName string) CounterChain {
 }
 
 func (c *chain) Histogram(initName string) HistogramChain {
-	// todo implement me
-	return nil
+	return c.acquireHistogram(initName)
 }
 
 func (c *chain) acquireGauge(initName string, f func() float64) *gauge {
@@ -99,8 +101,8 @@ func (c *chain) acquireCounter(initName string) *counter {
 }
 
 func (c *chain) releaseCounter(cc CounterChain) {
-	if gg, ok := any(cc).(*counter); ok {
-		gg.reset()
+	if cc_, ok := any(cc).(*counter); ok {
+		cc_.reset()
 		c.cpool.Put(cc)
 	}
 }
@@ -123,6 +125,41 @@ func (c *chain) getCounter(fullName string) *metrics.Counter {
 
 	cc := c.cnew(scopy(fullName))
 	c.cmap.Store(fullName, cc)
+	return cc
+}
+
+func (c *chain) acquireHistogram(initName string) *histogram {
+	h := c.hpool.Get().(*histogram)
+	h.sptr = c.ptr()
+	h.setName(initName)
+	return h
+}
+
+func (c *chain) releaseHistogram(h HistogramChain) {
+	if hh, ok := any(h).(*histogram); ok {
+		hh.reset()
+		c.hpool.Put(h)
+	}
+}
+
+func (c *chain) getHistogram(fullName string) *metrics.Histogram {
+	// Fast check.
+	if raw, ok := c.hmap.Load(fullName); ok {
+		return raw.(*metrics.Histogram)
+	}
+
+	// Slow path.
+	c.hmux.Lock()
+	defer c.hmux.Unlock()
+
+	// Double check.
+	if raw, ok := c.hmap.Load(fullName); ok {
+		// Double check passed.
+		return raw.(*metrics.Histogram)
+	}
+
+	cc := c.hnew(scopy(fullName))
+	c.hmap.Store(fullName, cc)
 	return cc
 }
 
