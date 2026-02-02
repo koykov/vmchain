@@ -37,9 +37,13 @@ func (b *builder) setAnyLabel(label string, value any) {
 	b.buf = append(b.buf, label...)
 	b.buf = append(b.buf, `="`...)
 
-	var err error
-	if b.buf, err = x2bytes.ToBytes(b.buf, value); err != nil {
-		b.buf = append(b.buf, err.Error()...)
+	if value != nil {
+		var err error
+		if b.buf, err = x2bytes.ToBytes(b.buf, value); err != nil {
+			b.buf = append(b.buf, err.Error()...)
+		}
+	} else {
+		b.buf = append(b.buf, "<nil>"...)
 	}
 
 	b.buf = append(b.buf, '"')
