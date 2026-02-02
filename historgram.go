@@ -10,6 +10,7 @@ type HistogramChain interface {
 	WithLabel(name, value string) HistogramChain
 	Update(value float64)
 	UpdateDuration(startTime time.Time)
+	VisitNonZeroBuckets(f func(vmrange string, count uint64))
 	Reset()
 }
 
@@ -34,6 +35,13 @@ func (h *histogram) UpdateDuration(startTime time.Time) {
 	if s := h.indirectSet(); s != nil {
 		defer s.releaseHistogram(h)
 		s.getHistogram(h.commit()).UpdateDuration(startTime)
+	}
+}
+
+func (h *histogram) VisitNonZeroBuckets(f func(vmrange string, count uint64)) {
+	if s := h.indirectSet(); s != nil {
+		defer s.releaseHistogram(h)
+		s.getHistogram(h.commit()).VisitNonZeroBuckets(f)
 	}
 }
 
