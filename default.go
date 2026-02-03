@@ -32,6 +32,10 @@ func Counter(initName string) CounterChain {
 	return defaultChain.Counter(initName)
 }
 
+func FloatCounter(initName string) FloatCounterChain {
+	return defaultChain.FloatCounter(initName)
+}
+
 // Histogram return existing or create and return new histogram metric.
 //
 // initName is a base name of a metric (without any labels). It must be valid Prometheus-compatible name.

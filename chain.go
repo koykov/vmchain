@@ -14,18 +14,20 @@ type Chain interface {
 	Gauge(initName string, f func() float64) GaugeChain
 	// Counter initialize with initName a counter chain and return it.
 	Counter(initName string) CounterChain
+	FloatCounter(initName string) FloatCounterChain
 	// Histogram initialize with initName a histogram chain and return it.
 	Histogram(initName string) HistogramChain
 }
 
 type chain struct {
-	gpool, cpool, hpool sync.Pool
-	gmux, cmux, hmux    sync.Mutex
-	gmap, cmap, hmap    sync.Map
+	gpool, cpool, fpool, hpool sync.Pool
+	gmux, cmux, fmux, hmux     sync.Mutex
+	gmap, cmap, fmap, hmap     sync.Map
 
 	vmset *metrics.Set
 	gnew  func(string, func() float64) *metrics.Gauge
 	cnew  func(string) *metrics.Counter
+	fnew  func(string) *metrics.FloatCounter
 	hnew  func(string) *metrics.Histogram
 }
 
@@ -34,10 +36,12 @@ func NewChain(options ...Option) Chain {
 	c := &chain{
 		gnew: metrics.NewGauge,
 		cnew: metrics.NewCounter,
+		fnew: metrics.NewFloatCounter,
 		hnew: metrics.NewHistogram,
 	}
 	c.gpool = sync.Pool{New: func() any { return &gauge{} }}
 	c.cpool = sync.Pool{New: func() any { return &counter{} }}
+	c.fpool = sync.Pool{New: func() any { return &fcounter{} }}
 	c.hpool = sync.Pool{New: func() any { return &histogram{} }}
 	for _, fn := range options {
 		fn(c)
@@ -45,6 +49,7 @@ func NewChain(options ...Option) Chain {
 	if c.vmset != nil {
 		c.gnew = c.vmset.NewGauge
 		c.cnew = c.vmset.NewCounter
+		c.fnew = c.vmset.NewFloatCounter
 		c.hnew = c.vmset.NewHistogram
 	}
 	return c
@@ -56,6 +61,10 @@ func (c *chain) Gauge(initName string, f func() float64) GaugeChain {
 
 func (c *chain) Counter(initName string) CounterChain {
 	return c.acquireCounter(initName)
+}
+
+func (c *chain) FloatCounter(initName string) FloatCounterChain {
+	return c.acquireFCounter(initName)
 }
 
 func (c *chain) Histogram(initName string) HistogramChain {
@@ -130,6 +139,41 @@ func (c *chain) getCounter(fullName string) *metrics.Counter {
 
 	cc := c.cnew(scopy(fullName))
 	c.cmap.Store(fullName, cc)
+	return cc
+}
+
+func (c *chain) acquireFCounter(initName string) *fcounter {
+	cc := c.fpool.Get().(*fcounter)
+	cc.sptr = c.ptr()
+	cc.setName(initName)
+	return cc
+}
+
+func (c *chain) releaseFCounter(cc FloatCounterChain) {
+	if cc_, ok := any(cc).(*fcounter); ok {
+		cc_.reset()
+		c.fpool.Put(cc)
+	}
+}
+
+func (c *chain) getFCounter(fullName string) *metrics.FloatCounter {
+	// Fast check.
+	if raw, ok := c.fmap.Load(fullName); ok {
+		return raw.(*metrics.FloatCounter)
+	}
+
+	// Slow path.
+	c.fmux.Lock()
+	defer c.fmux.Unlock()
+
+	// Double check.
+	if raw, ok := c.fmap.Load(fullName); ok {
+		// Double check passed.
+		return raw.(*metrics.FloatCounter)
+	}
+
+	cc := c.fnew(scopy(fullName))
+	c.fmap.Store(fullName, cc)
 	return cc
 }
 
