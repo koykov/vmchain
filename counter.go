@@ -4,6 +4,7 @@ import "github.com/koykov/indirect"
 
 type CounterChain interface {
 	WithLabel(name, value string) CounterChain
+	WithAnyLabel(name string, value any) CounterChain
 	Add(value int)
 	AddInt64(value int64)
 	Set(value uint64)
@@ -19,6 +20,11 @@ type counter struct {
 
 func (c *counter) WithLabel(name, value string) CounterChain {
 	c.setLabel(name, value)
+	return c
+}
+
+func (c *counter) WithAnyLabel(name string, value any) CounterChain {
+	c.setAnyLabel(name, value)
 	return c
 }
 

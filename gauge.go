@@ -4,6 +4,7 @@ import "github.com/koykov/indirect"
 
 type GaugeChain interface {
 	WithLabel(name, value string) GaugeChain
+	WithAnyLabel(name string, value any) GaugeChain
 	Add(value float64)
 	Set(value float64)
 	Inc()
@@ -19,6 +20,11 @@ type gauge struct {
 
 func (g *gauge) WithLabel(name, value string) GaugeChain {
 	g.setLabel(name, value)
+	return g
+}
+
+func (g *gauge) WithAnyLabel(name string, value any) GaugeChain {
+	g.setAnyLabel(name, value)
 	return g
 }
 

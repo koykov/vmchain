@@ -8,6 +8,7 @@ import (
 
 type HistogramChain interface {
 	WithLabel(name, value string) HistogramChain
+	WithAnyLabel(name string, value any) HistogramChain
 	Update(value float64)
 	UpdateDuration(startTime time.Time)
 	VisitNonZeroBuckets(f func(vmrange string, count uint64))
@@ -21,6 +22,11 @@ type histogram struct {
 
 func (h *histogram) WithLabel(name, value string) HistogramChain {
 	h.setLabel(name, value)
+	return h
+}
+
+func (h *histogram) WithAnyLabel(name string, value any) HistogramChain {
+	h.setAnyLabel(name, value)
 	return h
 }
 
