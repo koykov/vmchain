@@ -14,6 +14,7 @@ type Chain interface {
 	Gauge(initName string, f func() float64) GaugeChain
 	// Counter initialize with initName a counter chain and return it.
 	Counter(initName string) CounterChain
+	// FloatCounter initialize with initName a float counter chain and return it.
 	FloatCounter(initName string) FloatCounterChain
 	// Histogram initialize with initName a histogram chain and return it.
 	Histogram(initName string) HistogramChain
