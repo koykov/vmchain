@@ -35,10 +35,10 @@ type chain struct {
 // NewChain makes a new chain set.
 func NewChain(options ...Option) Chain {
 	c := &chain{
-		gnew: metrics.NewGauge,
-		cnew: metrics.NewCounter,
-		fnew: metrics.NewFloatCounter,
-		hnew: metrics.NewHistogram,
+		gnew: metrics.GetOrCreateGauge,
+		cnew: metrics.GetOrCreateCounter,
+		fnew: metrics.GetOrCreateFloatCounter,
+		hnew: metrics.GetOrCreateHistogram,
 	}
 	c.gpool = sync.Pool{New: func() any { return &gauge{} }}
 	c.cpool = sync.Pool{New: func() any { return &counter{} }}
@@ -48,10 +48,10 @@ func NewChain(options ...Option) Chain {
 		fn(c)
 	}
 	if c.vmset != nil {
-		c.gnew = c.vmset.NewGauge
-		c.cnew = c.vmset.NewCounter
-		c.fnew = c.vmset.NewFloatCounter
-		c.hnew = c.vmset.NewHistogram
+		c.gnew = c.vmset.GetOrCreateGauge
+		c.cnew = c.vmset.GetOrCreateCounter
+		c.fnew = c.vmset.GetOrCreateFloatCounter
+		c.hnew = c.vmset.GetOrCreateHistogram
 	}
 	return c
 }
@@ -104,7 +104,7 @@ func (c *chain) getGauge(fullName string, f func() float64) *metrics.Gauge {
 	}
 
 	g := c.gnew(scopy(fullName), f)
-	c.gmap.Store(fullName, g)
+	c.gmap.LoadOrStore(fullName, g)
 	return g
 }
 
@@ -139,7 +139,7 @@ func (c *chain) getCounter(fullName string) *metrics.Counter {
 	}
 
 	cc := c.cnew(scopy(fullName))
-	c.cmap.Store(fullName, cc)
+	c.cmap.LoadOrStore(fullName, cc)
 	return cc
 }
 
@@ -174,7 +174,7 @@ func (c *chain) getFCounter(fullName string) *metrics.FloatCounter {
 	}
 
 	cc := c.fnew(scopy(fullName))
-	c.fmap.Store(fullName, cc)
+	c.fmap.LoadOrStore(fullName, cc)
 	return cc
 }
 
@@ -209,7 +209,7 @@ func (c *chain) getHistogram(fullName string) *metrics.Histogram {
 	}
 
 	cc := c.hnew(scopy(fullName))
-	c.hmap.Store(fullName, cc)
+	c.hmap.LoadOrStore(fullName, cc)
 	return cc
 }
 
