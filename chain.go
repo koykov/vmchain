@@ -22,19 +22,26 @@ type Chain interface {
 
 type chain struct {
 	gpool, cpool, fpool, hpool sync.Pool
-	gmux, cmux, fmux, hmux     sync.Mutex
-	gmap, cmap, fmap, hmap     sync.Map
+	gmux, cmux, fmux, hmux     sync.RWMutex
+	gmap, cmap, fmap, hmap     map[uint64]any
 
 	vmset *metrics.Set
 	gnew  func(string, func() float64) *metrics.Gauge
 	cnew  func(string) *metrics.Counter
 	fnew  func(string) *metrics.FloatCounter
 	hnew  func(string) *metrics.Histogram
+
+	hash Hasher
 }
 
 // NewChain makes a new chain set.
 func NewChain(options ...Option) Chain {
 	c := &chain{
+		gmap: make(map[uint64]any),
+		cmap: make(map[uint64]any),
+		fmap: make(map[uint64]any),
+		hmap: make(map[uint64]any),
+
 		gnew: metrics.GetOrCreateGauge,
 		cnew: metrics.GetOrCreateCounter,
 		fnew: metrics.GetOrCreateFloatCounter,
@@ -46,6 +53,9 @@ func NewChain(options ...Option) Chain {
 	c.hpool = sync.Pool{New: func() any { return &histogram{} }}
 	for _, fn := range options {
 		fn(c)
+	}
+	if c.hash == nil {
+		c.hash = defaultHasher{}
 	}
 	if c.vmset != nil {
 		c.gnew = c.vmset.GetOrCreateGauge
@@ -88,8 +98,13 @@ func (c *chain) releaseGauge(g GaugeChain) {
 }
 
 func (c *chain) getGauge(fullName string, f func() float64) *metrics.Gauge {
+	h := c.hash.Sum64(fullName)
+
 	// Fast check.
-	if raw, ok := c.gmap.Load(fullName); ok {
+	c.gmux.RLock()
+	raw, ok := c.gmap[h]
+	c.gmux.RUnlock()
+	if ok {
 		return raw.(*metrics.Gauge)
 	}
 
@@ -98,13 +113,13 @@ func (c *chain) getGauge(fullName string, f func() float64) *metrics.Gauge {
 	defer c.gmux.Unlock()
 
 	// Double check.
-	if raw, ok := c.gmap.Load(fullName); ok {
+	if raw, ok = c.gmap[h]; ok {
 		// Double check passed.
 		return raw.(*metrics.Gauge)
 	}
 
 	g := c.gnew(scopy(fullName), f)
-	c.gmap.LoadOrStore(fullName, g)
+	c.gmap[h] = g
 	return g
 }
 
@@ -123,8 +138,13 @@ func (c *chain) releaseCounter(cc CounterChain) {
 }
 
 func (c *chain) getCounter(fullName string) *metrics.Counter {
+	h := c.hash.Sum64(fullName)
+
 	// Fast check.
-	if raw, ok := c.cmap.Load(fullName); ok {
+	c.cmux.RLock()
+	raw, ok := c.cmap[h]
+	c.cmux.RUnlock()
+	if ok {
 		return raw.(*metrics.Counter)
 	}
 
@@ -133,13 +153,13 @@ func (c *chain) getCounter(fullName string) *metrics.Counter {
 	defer c.cmux.Unlock()
 
 	// Double check.
-	if raw, ok := c.cmap.Load(fullName); ok {
+	if raw, ok = c.cmap[h]; ok {
 		// Double check passed.
 		return raw.(*metrics.Counter)
 	}
 
 	cc := c.cnew(scopy(fullName))
-	c.cmap.LoadOrStore(fullName, cc)
+	c.cmap[h] = cc
 	return cc
 }
 
@@ -158,8 +178,13 @@ func (c *chain) releaseFCounter(cc FloatCounterChain) {
 }
 
 func (c *chain) getFCounter(fullName string) *metrics.FloatCounter {
+	h := c.hash.Sum64(fullName)
+
 	// Fast check.
-	if raw, ok := c.fmap.Load(fullName); ok {
+	c.fmux.RLock()
+	raw, ok := c.fmap[h]
+	c.fmux.RUnlock()
+	if ok {
 		return raw.(*metrics.FloatCounter)
 	}
 
@@ -168,13 +193,13 @@ func (c *chain) getFCounter(fullName string) *metrics.FloatCounter {
 	defer c.fmux.Unlock()
 
 	// Double check.
-	if raw, ok := c.fmap.Load(fullName); ok {
+	if raw, ok = c.fmap[h]; ok {
 		// Double check passed.
 		return raw.(*metrics.FloatCounter)
 	}
 
 	cc := c.fnew(scopy(fullName))
-	c.fmap.LoadOrStore(fullName, cc)
+	c.fmap[h] = cc
 	return cc
 }
 
@@ -193,8 +218,13 @@ func (c *chain) releaseHistogram(h HistogramChain) {
 }
 
 func (c *chain) getHistogram(fullName string) *metrics.Histogram {
+	h := c.hash.Sum64(fullName)
+
 	// Fast check.
-	if raw, ok := c.hmap.Load(fullName); ok {
+	c.hmux.RLock()
+	raw, ok := c.hmap[h]
+	c.hmux.RUnlock()
+	if ok {
 		return raw.(*metrics.Histogram)
 	}
 
@@ -203,14 +233,14 @@ func (c *chain) getHistogram(fullName string) *metrics.Histogram {
 	defer c.hmux.Unlock()
 
 	// Double check.
-	if raw, ok := c.hmap.Load(fullName); ok {
+	if raw, ok = c.hmap[h]; ok {
 		// Double check passed.
 		return raw.(*metrics.Histogram)
 	}
 
-	cc := c.hnew(scopy(fullName))
-	c.hmap.LoadOrStore(fullName, cc)
-	return cc
+	hh := c.hnew(scopy(fullName))
+	c.hmap[h] = hh
+	return hh
 }
 
 func (c *chain) ptr() uintptr {
