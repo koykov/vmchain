@@ -11,9 +11,3 @@ func WithVMSet(vmset *metrics.Set) Option {
 		c.vmset = vmset
 	}
 }
-
-func WithHasher(hasher Hasher) Option {
-	return func(c *chain) {
-		c.hash = hasher
-	}
-}
