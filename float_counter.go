@@ -4,7 +4,9 @@ import "github.com/koykov/indirect"
 
 type FloatCounterChain interface {
 	WithLabel(name, value string) FloatCounterChain
+	L(name, value string) FloatCounterChain
 	WithAnyLabel(name string, value any) FloatCounterChain
+	AL(name string, value any) FloatCounterChain
 	Add(value float64)
 	Sub(value float64)
 	Set(value float64)
@@ -21,9 +23,17 @@ func (c *fcounter) WithLabel(name, value string) FloatCounterChain {
 	return c
 }
 
+func (c *fcounter) L(name, value string) FloatCounterChain {
+	return c.WithLabel(name, value)
+}
+
 func (c *fcounter) WithAnyLabel(name string, value any) FloatCounterChain {
 	c.setAnyLabel(name, value)
 	return c
+}
+
+func (c *fcounter) AL(name string, value any) FloatCounterChain {
+	return c.WithAnyLabel(name, value)
 }
 
 func (c *fcounter) Add(value float64) {

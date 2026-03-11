@@ -4,7 +4,9 @@ import "github.com/koykov/indirect"
 
 type CounterChain interface {
 	WithLabel(name, value string) CounterChain
+	L(name, value string) CounterChain
 	WithAnyLabel(name string, value any) CounterChain
+	AL(name string, value any) CounterChain
 	Add(value int)
 	AddInt64(value int64)
 	Set(value uint64)
@@ -23,9 +25,17 @@ func (c *counter) WithLabel(name, value string) CounterChain {
 	return c
 }
 
+func (c *counter) L(name, value string) CounterChain {
+	return c.WithLabel(name, value)
+}
+
 func (c *counter) WithAnyLabel(name string, value any) CounterChain {
 	c.setAnyLabel(name, value)
 	return c
+}
+
+func (c *counter) AL(name string, value any) CounterChain {
+	return c.WithAnyLabel(name, value)
 }
 
 func (c *counter) Add(value int) {

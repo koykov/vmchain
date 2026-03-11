@@ -12,12 +12,20 @@ import (
 type Chain interface {
 	// Gauge initialize with initName a gauge chain and return it.
 	Gauge(initName string, f func() float64) GaugeChain
+	// G is a shorthand version of Gauge.
+	G(initName string, f func() float64) GaugeChain
 	// Counter initialize with initName a counter chain and return it.
 	Counter(initName string) CounterChain
+	// C is a shorthand version of Counter.
+	C(initName string) CounterChain
 	// FloatCounter initialize with initName a float counter chain and return it.
 	FloatCounter(initName string) FloatCounterChain
+	// FC is a shorthand version of FloatCounter.
+	FC(initName string) FloatCounterChain
 	// Histogram initialize with initName a histogram chain and return it.
 	Histogram(initName string) HistogramChain
+	// H is a shorthand version of Histogram.
+	H(initName string) HistogramChain
 }
 
 type chain struct {
@@ -65,16 +73,32 @@ func (c *chain) Gauge(initName string, f func() float64) GaugeChain {
 	return c.acquireGauge(initName, f)
 }
 
+func (c *chain) G(initName string, f func() float64) GaugeChain {
+	return c.Gauge(initName, f)
+}
+
 func (c *chain) Counter(initName string) CounterChain {
 	return c.acquireCounter(initName)
+}
+
+func (c *chain) C(initName string) CounterChain {
+	return c.Counter(initName)
 }
 
 func (c *chain) FloatCounter(initName string) FloatCounterChain {
 	return c.acquireFCounter(initName)
 }
 
+func (c *chain) FC(initName string) FloatCounterChain {
+	return c.FloatCounter(initName)
+}
+
 func (c *chain) Histogram(initName string) HistogramChain {
 	return c.acquireHistogram(initName)
+}
+
+func (c *chain) H(initName string) HistogramChain {
+	return c.Histogram(initName)
 }
 
 func (c *chain) acquireGauge(initName string, f func() float64) *gauge {
