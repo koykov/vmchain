@@ -8,7 +8,9 @@ import (
 
 type HistogramChain interface {
 	WithLabel(name, value string) HistogramChain
+	L(name, value string) HistogramChain
 	WithAnyLabel(name string, value any) HistogramChain
+	AL(name string, value any) HistogramChain
 	Update(value float64)
 	UpdateDuration(startTime time.Time)
 	VisitNonZeroBuckets(f func(vmrange string, count uint64))
@@ -25,9 +27,17 @@ func (h *histogram) WithLabel(name, value string) HistogramChain {
 	return h
 }
 
+func (h *histogram) L(name, value string) HistogramChain {
+	return h.WithLabel(name, value)
+}
+
 func (h *histogram) WithAnyLabel(name string, value any) HistogramChain {
 	h.setAnyLabel(name, value)
 	return h
+}
+
+func (h *histogram) AL(name string, value any) HistogramChain {
+	return h.WithAnyLabel(name, value)
 }
 
 func (h *histogram) Update(value float64) {

@@ -4,7 +4,9 @@ import "github.com/koykov/indirect"
 
 type GaugeChain interface {
 	WithLabel(name, value string) GaugeChain
+	L(name, value string) GaugeChain
 	WithAnyLabel(name string, value any) GaugeChain
+	AL(name string, value any) GaugeChain
 	Add(value float64)
 	Set(value float64)
 	Inc()
@@ -23,9 +25,17 @@ func (g *gauge) WithLabel(name, value string) GaugeChain {
 	return g
 }
 
+func (g *gauge) L(name, value string) GaugeChain {
+	return g.WithLabel(name, value)
+}
+
 func (g *gauge) WithAnyLabel(name string, value any) GaugeChain {
 	g.setAnyLabel(name, value)
 	return g
+}
+
+func (g *gauge) AL(name string, value any) GaugeChain {
+	return g.WithAnyLabel(name, value)
 }
 
 func (g *gauge) Add(value float64) {
